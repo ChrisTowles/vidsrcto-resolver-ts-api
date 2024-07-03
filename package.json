@@ -6,10 +6,10 @@
   "scripts": {
     "start": "nodemon dist/index.js",
     "build": " tsc",
-    "dev": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "ts.check": "tsc --project tsconfig.json",
     "add-build": "git add dist",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -33,6 +33,7 @@
     "@types/urlparser": "^0.2.3",
     "rimraf": "^5.0.5",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
   }
 }

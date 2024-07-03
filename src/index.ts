@@ -53,23 +53,29 @@ app
   });
 
 class CONSTANTS {
-  static BASE_URL: string = "https://playsrc.xyz/";
+  static BASE_URL: string = "https://vidsrc.to/";
   static PROVIDER_URL: string = "https://vidplay.online"; // vidplay.site / vidplay.online / vidplay.lol
   static source_name: string = "Vidplay";
   static DEFAULT_KEY: string = "WXrUARXb1aDLaZjI";
 }
 
-interface sourcereq {
-  status: number;
 
-  result: {
-    sources: [
-      {
-        file: string;
-      }
-    ];
-  };
+interface Provider {
+  name?: string;
+  source_url?: string;
 }
+
+const providerList: Provider[] = [
+  {
+    name: "Vidplay", source_url: "https://vidplay.online"
+  },
+  {
+    name: "Vidplay", source_url: "https://vidplay.site"
+  },
+  {
+    name: "Vidplay", source_url: "https://vidplay.lol"
+  }
+];
 
 // init({
 //   routes: ["./src"],
@@ -250,9 +256,10 @@ const getVidplaySubtitles = async (url_data: string) => {
   }
 };
 
-const main_func = async (endpnt: string) => {
+export const main_func = async (endpnt: string) => {
   try {
-    const res = await request.get(`${CONSTANTS.BASE_URL}${endpnt}`);
+    const url = `${CONSTANTS.BASE_URL}${endpnt}`
+    const res = await request.get(url);
     const $ = cheerio.load(res?.text);
     const data_id: string | undefined = $("a[data-id]").first().attr("data-id");
 
@@ -264,11 +271,13 @@ const main_func = async (endpnt: string) => {
     );
 
 
+
+
     if (get_source_id) {
       const source_id = await JSON.parse(get_source_id.text).result[0].id;
 
       const geturl = await request.get(
-        `https://playsrc.xyz/ajax/embed/source/${source_id}`
+       CONSTANTS.BASE_URL + `ajax/embed/source/${source_id}`
       );
       const url = await JSON.parse(geturl.text).result.url;
 
@@ -286,15 +295,7 @@ const main_func = async (endpnt: string) => {
 
       const futoken = await getfutoken(decoded_url, key);
       const subtitles: JSON = await getVidplaySubtitles(decoded_url);
-      const ip =
-        Math.floor(Math.random() * 255) +
-        1 +
-        "." +
-        Math.floor(Math.random() * 255) +
-        "." +
-        Math.floor(Math.random() * 255) +
-        "." +
-        Math.floor(Math.random() * 255);
+      const ip =  createFakeIp();
 
       const fetchlinks = await request
         .get(
@@ -322,3 +323,14 @@ const main_func = async (endpnt: string) => {
     };
   }
 };
+
+const createFakeIp = () => {
+  return Math.floor(Math.random() * 255) + 1 +
+    "." +
+    Math.floor(Math.random() * 255) +
+    "." +
+    Math.floor(Math.random() * 255) +
+    "." +
+    Math.floor(Math.random() * 255);
+}
+
