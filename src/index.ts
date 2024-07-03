@@ -255,9 +255,14 @@ const main_func = async (endpnt: string) => {
     const res = await request.get(`${CONSTANTS.BASE_URL}${endpnt}`);
     const $ = cheerio.load(res?.text);
     const data_id: string | undefined = $("a[data-id]").first().attr("data-id");
+
+    if (data_id === undefined) {
+      throw new Error("No data_id found");
+    }
     const get_source_id = await request.get(
       `${CONSTANTS.BASE_URL}ajax/embed/episode/${data_id}/sources`
     );
+
 
     if (get_source_id) {
       const source_id = await JSON.parse(get_source_id.text).result[0].id;
@@ -313,6 +318,7 @@ const main_func = async (endpnt: string) => {
   } catch (e) {
     return {
       status: 404,
+      error: (e as Error).message,
     };
   }
 };
