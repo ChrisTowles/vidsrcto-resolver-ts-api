@@ -9,7 +9,6 @@ import dotenv from "dotenv"
 
 import * as _ from "lodash";
 import { Application } from "express";
-import { ProviderType } from "providers";
 import { main_func } from "./main_func";
 import { CONSTANTS } from "./constants";
 

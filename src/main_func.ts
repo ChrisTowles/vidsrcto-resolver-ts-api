@@ -1,11 +1,11 @@
 import request from "superagent";
 import { ofetch } from "ofetch";
 import * as cheerio from "cheerio";
-import { Provider, ProviderResult, ProviderType } from "providers";
+
 import { getdecodedurl, encodeid, getfutoken, createFakeIp } from "./index";
 import { getVidplaySubtitles } from "./getVidplaySubtitles";
 import { CONSTANTS } from "./constants";
-import { b, g } from "vitest/dist/suite-IbNSsUWN";
+import { Provider, ProviderResult, ProviderType } from "./types/providers";
 
 
 export const main_func = async (endpnt: string) => {
@@ -32,6 +32,7 @@ export const main_func = async (endpnt: string) => {
       let finalResult: PorcessSourceResult | null = null;
       for await (const source of sourcesResult.result) {
 
+        console.log(`source title: ${source.title} id: ${source.id}`)
         if (finalResult === null) {
 
           switch (source.title) { 
@@ -76,10 +77,10 @@ interface PorcessSourceResult {
 };
 
 const process_vidsrc = async (source: Provider): Promise<PorcessSourceResult> => {
-  const geturl = await request.get(
-    CONSTANTS.BASE_URL + `ajax/embed/source/${source.id}`
+  const geturlText = await ofetch(
+    CONSTANTS.BASE_URL + `ajax/embed/source/${source.id}`, { parseResponse: (txt) => txt }
   );
-  const url = await JSON.parse(geturl.text).result.url;
+  const url = await JSON.parse(geturlText).result.url;
 
   const decoded_url = getdecodedurl(url);
 
