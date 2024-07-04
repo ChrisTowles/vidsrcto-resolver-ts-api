@@ -1,16 +1,19 @@
 import request from "superagent";
 import { ofetch } from "ofetch";
 import * as cheerio from "cheerio";
-
-import { getdecodedurl, encodeid, getfutoken, createFakeIp } from "./index";
+import { getdecodedurl, encodeid, getfutoken, createFakeIp, getTmdbIDSerie } from "./utils";
 import { getVidplaySubtitles } from "./getVidplaySubtitles";
 import { CONSTANTS } from "./constants";
-import { Provider, ProviderResult, ProviderType } from "./types/providers";
+import { Provider, ProviderResult, ProviderType, PorcessSourceResult } from "./models/providers";
+import { MediaRequest,  getUrlPartForMedia } from "./models/media";
 
 
-export const main_func = async (endpnt: string) => {
+
+
+export const main_func = async (media: MediaRequest) => {
   try {
-    const url = `${CONSTANTS.BASE_URL}${endpnt}`;
+    const mediaPart = getUrlPartForMedia(media);
+    const url = `${CONSTANTS.BASE_URL}${mediaPart}`;
     const res = await ofetch( url,  { parseResponse: (txt) => txt });
 
     const $ = cheerio.load(res);
@@ -19,6 +22,9 @@ export const main_func = async (endpnt: string) => {
     if (data_id === undefined) {
       throw new Error("No data_id found");
     }
+
+    const tmdbId = getTmdbIDSerie(data_id);
+
     const sourcesResult = await ofetch<ProviderResult>(
       `${CONSTANTS.BASE_URL}ajax/embed/episode/${data_id}/sources`
     );
@@ -28,6 +34,8 @@ export const main_func = async (endpnt: string) => {
     const succesful = false;
     if (sourcesResult.status === 200 && !succesful) {
 
+      const listAsString = sourcesResult.result.map((source) => source.title).join(", ");
+      console.log(`sources: ${listAsString}`);
 
       let finalResult: PorcessSourceResult | null = null;
       for await (const source of sourcesResult.result) {
@@ -40,10 +48,10 @@ export const main_func = async (endpnt: string) => {
               finalResult = await process_vidsrc(source);
               break;
             case ProviderType.VidSrc:
-              finalResult = await process_vidsrc(source);
+              // finalResult = await process_vidsrc(source);
               break;
             case ProviderType.Filemoon:
-              finalResult = await process_vidsrc(source);
+              // finalResult = await process_vidsrc(source);
               break;
             default:
               throw new Error(`Provider ${source.title} not supported`);
@@ -70,11 +78,7 @@ export const main_func = async (endpnt: string) => {
   }
 };
 
-interface PorcessSourceResult {
-  source: string,
-  subtitles: JSON,
-  status: 200,
-};
+
 
 const process_vidsrc = async (source: Provider): Promise<PorcessSourceResult> => {
   const geturlText = await ofetch(
@@ -91,11 +95,12 @@ const process_vidsrc = async (source: Provider): Promise<PorcessSourceResult> =>
   const [key1, key2] = await JSON.parse(cloud_keys.text);
 
   const url_data = decoded_url.split("?");
+  const vid_id = url_data[0].split("/e/")[1];
 
-  const key = encodeid(url_data[0].split("/e/")[1], key1, key2);
+  const key = encodeid(vid_id, key1, key2);
 
   const futoken = await getfutoken(decoded_url, key);
-  const subtitles: JSON = await getVidplaySubtitles(decoded_url);
+  const subtitles: object = {}; // await getVidplaySubtitles(decoded_url);
   const ip = createFakeIp();
 
   const fetchlinks = await request
@@ -107,7 +112,7 @@ const process_vidsrc = async (source: Provider): Promise<PorcessSourceResult> =>
     .set({ host: "vidplay.online" });
 
   const finaljson: any | undefined = JSON.parse(fetchlinks.text);
-
+  
   // console.log(JSON.parse(fetchlinks.text));
   if (finaljson) {
     return {
