@@ -1,17 +1,17 @@
 import request from "superagent";
 
-import * as cheerio from "cheerio";
-
 import express, { Request, Response } from "express";
 
 import cors from "cors"
 
-import urlParser from "urlparser";
 
 import dotenv from "dotenv"
 
 import * as _ from "lodash";
 import { Application } from "express";
+import { ProviderType } from "providers";
+import { main_func } from "./main_func";
+import { CONSTANTS } from "./constants";
 
 const app: Application = express();
 
@@ -52,30 +52,8 @@ app
     console.log(`server is running on port http//localhost:${port}`);
   });
 
-class CONSTANTS {
-  static BASE_URL: string = "https://vidsrc.to/";
-  static PROVIDER_URL: string = "https://vidplay.online"; // vidplay.site / vidplay.online / vidplay.lol
-  static source_name: string = "Vidplay";
-  static DEFAULT_KEY: string = "WXrUARXb1aDLaZjI";
-}
 
 
-interface Provider {
-  name?: string;
-  source_url?: string;
-}
-
-const providerList: Provider[] = [
-  {
-    name: "Vidplay", source_url: "https://vidplay.online"
-  },
-  {
-    name: "Vidplay", source_url: "https://vidplay.site"
-  },
-  {
-    name: "Vidplay", source_url: "https://vidplay.lol"
-  }
-];
 
 // init({
 //   routes: ["./src"],
@@ -141,7 +119,7 @@ const file_get = async (urlg: string) => {
   }
 };
 
-const getdecodedurl = (url: string) => {
+export const getdecodedurl = (url: string) => {
   const encoded: Buffer = getbase64(url);
 
   const decoded: Buffer = getdecoded(encoded, CONSTANTS.DEFAULT_KEY);
@@ -204,7 +182,7 @@ const getdecoded = (encoded: Buffer | string, key: string) => {
   return decoded;
 };
 
-const encodeid = (v_id: string, key1: string, key2: string) => {
+export const encodeid = (v_id: string, key1: string, key2: string) => {
   const decode_id = getdecoded(v_id, key1);
   const encoded_result = getdecoded(decode_id, key2).toString("latin1");
   const encoded_base64 = btoa(encoded_result);
@@ -212,7 +190,7 @@ const encodeid = (v_id: string, key1: string, key2: string) => {
   return encoded_base64.replace("/", "_");
 };
 
-const getfutoken = async (url: string, key: string) => {
+export const getfutoken = async (url: string, key: string) => {
   const response = await request
     .get(`${CONSTANTS.PROVIDER_URL}/futoken`)
     .set({ Referer: url });
@@ -235,96 +213,7 @@ const getfutoken = async (url: string, key: string) => {
   }
 };
 
-const getVidplaySubtitles = async (url_data: string) => {
-  var u = urlParser.parse(url_data);
-
-  var out = u.query.parts[0].split("=");
-
-  const conn = urlParser.parse(decodeURIComponent(out[1]));
-
-  if (conn) {
-    const resp = await request.get(`${CONSTANTS.BASE_URL}${conn.path.base}`);
-
-    try {
-      const parse = JSON.parse(resp.text);
-      return parse;
-    } catch (e) {
-      return [];
-    }
-  } else {
-    return [];
-  }
-};
-
-export const main_func = async (endpnt: string) => {
-  try {
-    const url = `${CONSTANTS.BASE_URL}${endpnt}`
-    const res = await request.get(url);
-    const $ = cheerio.load(res?.text);
-    const data_id: string | undefined = $("a[data-id]").first().attr("data-id");
-
-    if (data_id === undefined) {
-      throw new Error("No data_id found");
-    }
-    const get_source_id = await request.get(
-      `${CONSTANTS.BASE_URL}ajax/embed/episode/${data_id}/sources`
-    );
-
-
-
-
-    if (get_source_id) {
-      const source_id = await JSON.parse(get_source_id.text).result[0].id;
-
-      const geturl = await request.get(
-       CONSTANTS.BASE_URL + `ajax/embed/source/${source_id}`
-      );
-      const url = await JSON.parse(geturl.text).result.url;
-
-      const decoded_url = getdecodedurl(url);
-
-      const cloud_keys = await request.get(
-        "https://raw.githubusercontent.com/Ciarands/vidsrc-keys/main/keys.json"
-      );
-
-      const [key1, key2] = await JSON.parse(cloud_keys.text);
-
-      const url_data = decoded_url.split("?");
-
-      const key = encodeid(url_data[0].split("/e/")[1], key1, key2);
-
-      const futoken = await getfutoken(decoded_url, key);
-      const subtitles: JSON = await getVidplaySubtitles(decoded_url);
-      const ip =  createFakeIp();
-
-      const fetchlinks = await request
-        .get(
-          `${CONSTANTS.PROVIDER_URL}/mediainfo/${futoken}?${url_data[1]}&autostart=true`
-        )
-        .set({ referer: decoded_url })
-        .set({ origin: ip })
-        .set({ host: "vidplay.online" });
-
-      const finaljson: sourcereq | undefined = JSON.parse(fetchlinks.text);
-
-      // console.log(JSON.parse(fetchlinks.text));
-      if (finaljson) {
-        return {
-          source: finaljson.result.sources[0].file,
-          subtitles: subtitles,
-          status: 200,
-        };
-      }
-    }
-  } catch (e) {
-    return {
-      status: 404,
-      error: (e as Error).message,
-    };
-  }
-};
-
-const createFakeIp = () => {
+export const createFakeIp = () => {
   return Math.floor(Math.random() * 255) + 1 +
     "." +
     Math.floor(Math.random() * 255) +

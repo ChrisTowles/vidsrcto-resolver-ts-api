@@ -1,10 +1,22 @@
 import { expect, test } from 'vitest'
 
-import { main_func } from './index'
+import { main_func } from "./main_func"
 
-test('test movie', async () => {
+test.skip('test tv show', {timeout: 2 * 60 * 1000}, async () => {
 
-    const testMovieId = 'tt0111161'
+    const testMovieId = 'tt0944947' // Game of Thrones
+    const result = await main_func(`embed/tv/${testMovieId}/1/1`)
+
+    expect(result.status).toBe(200)
+
+})
+
+
+test('test movie - The Godfather', {timeout: 2 * 60 * 1000}, async () => {
+
+    const testMovieId = 'tt0068646'  // The Godfather
     const result = await main_func(`embed/movie/${testMovieId}`)
-    expect(1 + 2).toBe(3)
+
+    expect(result.status).toBe(200)
+
 })
