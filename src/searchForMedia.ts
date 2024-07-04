@@ -10,7 +10,7 @@ import { MediaRequest,  getUrlPartForMedia } from "./models/media";
 
 
 
-export const main_func = async (media: MediaRequest) => {
+export const searchForMedia = async (media: MediaRequest) => {
   try {
     const mediaPart = getUrlPartForMedia(media);
     const url = `${CONSTANTS.BASE_URL}${mediaPart}`;

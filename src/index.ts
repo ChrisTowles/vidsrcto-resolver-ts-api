@@ -9,8 +9,8 @@ import dotenv from "dotenv"
 
 import * as _ from "lodash";
 import { Application } from "express";
-import { main_func } from "./main_func";
-import { CONSTANTS } from "./constants";
+import { searchForMedia } from "./searchForMedia";
+import { MediaType } from "./models/media";
 
 const app: Application = express();
 
@@ -26,7 +26,11 @@ app
   })
 
   .get("/movie/:tmdbId", async (req: Request, res: Response) => {
-    const resp = await main_func(`embed/movie/${req.params.tmdbId}`);
+
+    const resp = await searchForMedia({
+      mediaType: MediaType.movie,
+      id: req.params.tmdbId
+    });
 
     if (resp) {
       res.json(resp);
@@ -36,8 +40,15 @@ app
   })
 
   .get("/tv/:tmdbId/:season/:episode", async (req: Request, res: Response) => {
-    const resp = await main_func(
-      `embed/tv/${req.params.tmdbId}/${req.params.season}/${req.params.episode}`
+    const resp = await searchForMedia({
+      mediaType: MediaType.tv,
+      id: req.params.tmdbId,
+      ifTV: {
+        season: Number.parseInt(req.params.season),
+        episode: Number.parseInt(req.params.episode)
+       },
+    }
+      
     );
 
     if (resp) {
@@ -51,11 +62,3 @@ app
     console.log(`server is running on port http//localhost:${port}`);
   });
 
-
-
-
-// init({
-//   routes: ["./src"],
-
-//   serve: { port: 8080 },
-// });
